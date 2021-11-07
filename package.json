@@ -1,0 +1,19 @@
+{
+  "name": "dynamic-twitter-header",
+  "version": "1.0.0",
+  "description": "Prateek's dynamic twitter header",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Prateek Surana",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "dotenv": "^10.0.0",
+    "fs": "^0.0.1-security",
+    "jimp": "^0.16.1",
+    "sharp": "^0.29.2",
+    "twitter-api-client": "^1.4.0"
+  }
+}
