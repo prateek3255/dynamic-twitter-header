@@ -3,8 +3,12 @@ import Jimp from "jimp";
 import qs from "qs";
 import axios, { AxiosRequestConfig } from "axios";
 import dotenv from "dotenv";
+import truncate from "lodash/truncate";
+import Parser from "rss-parser";
 
 dotenv.config();
+
+var parser = new Parser();
 
 // ---------------
 // Spotify stuff
@@ -54,25 +58,41 @@ async function getRecentTracks(): Promise<Track[]> {
     const { name, artists } = item.track;
     const cover = item.track.album.images[0].url;
     const artist = artists[0].name;
+    const nameWithoutBrackets = name.replace(/\(.*\)/, "").trim();
+    const truncatedName = truncate(nameWithoutBrackets, {
+      length: 30,
+    });
 
-    return { name, cover, artist };
+    return { name: truncatedName, cover, artist };
   });
 }
 
 const TRACKS_COORDINATES = {
-    cover: {
-        x: 1990,
-        y: 203
-    },
-    name: {
-        x: 2220,
-        y: 222
-    },
-    artist: {
-        x: 2220,
-        y: 312
-    },
-    gap: 257
+  cover: {
+    x: 1990,
+    y: 203,
+  },
+  name: {
+    x: 2220,
+    y: 222,
+  },
+  artist: {
+    x: 2220,
+    y: 312,
+  },
+  gap: 257,
+};
+
+// ---------------
+// Blog stuff
+// ---------------
+
+async function getLatestArticle() {
+  const articleData = await parser.parseURL(
+    `https://prateeksurana.me/blog/feed.xml`
+  );
+  const latestArticle = articleData.items[articleData.items.length - 1];
+  return { title: latestArticle.title, summary: latestArticle.summary };
 }
 
 async function processImage() {
@@ -88,33 +108,49 @@ async function processImage() {
     );
 
     const header = await Jimp.read("./header.png");
-
-
+    
+    // --------------------
+    // Spotify related stuff for printing the tracks
+    // --------------------
     const tracks = await getRecentTracks();
 
     for (const [index, track] of tracks.entries()) {
-        const cover = await Jimp.read(track.cover);
-        const resizedCover = cover.resize(200, 200);
+      const cover = await Jimp.read(track.cover);
+      const resizedCover = cover.resize(200, 200);
 
-        const currentGap = index * TRACKS_COORDINATES.gap;
+      // This represents the gap between the position of the
+      // current track and the starting position of the first track
+      const currentGap = index * TRACKS_COORDINATES.gap;
 
-        header.composite(resizedCover, TRACKS_COORDINATES.cover.x, TRACKS_COORDINATES.cover.y + currentGap);
-        header.print(cabinRegular56, TRACKS_COORDINATES.name.x, TRACKS_COORDINATES.name.y + currentGap, track.name);
-        header.print(cabinRegular48, TRACKS_COORDINATES.artist.x, TRACKS_COORDINATES.artist.y + currentGap, track.artist);
-
+      header.composite(
+        resizedCover,
+        TRACKS_COORDINATES.cover.x,
+        TRACKS_COORDINATES.cover.y + currentGap
+      );
+      header.print(
+        cabinRegular56,
+        TRACKS_COORDINATES.name.x,
+        TRACKS_COORDINATES.name.y + currentGap,
+        track.name
+      );
+      header.print(
+        cabinRegular48,
+        TRACKS_COORDINATES.artist.x,
+        TRACKS_COORDINATES.artist.y + currentGap,
+        track.artist
+      );
     }
 
-    header.print(
-      cabinMedium56,
-      923,
-      223,
-      "Mastering data fetching with React Query and Next.js",
-      909
-    );
+    // --------------------
+    // Blog related stuff for printing the latest article
+    // --------------------
+    const article = await getLatestArticle();
+
+    header.print(cabinMedium56, 923, 223, article.title, 909);
 
     const titleHeight = Jimp.measureTextHeight(
       cabinMedium56,
-      "Mastering data fetching with React Query and Next.js",
+      article.title,
       909
     );
 
@@ -122,14 +158,11 @@ async function processImage() {
       cabinRegular48,
       923,
       223 + titleHeight + 14,
-      "Learn how React Query simplifies data fetching and caching for you and how it works in tandem with the Next.js pre-rendering methods",
+      article.summary,
       909
     );
 
     header.write("result.png");
-
-    
-
   } catch (e) {
     console.log(e);
   }
