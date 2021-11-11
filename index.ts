@@ -1,5 +1,6 @@
 import fs from "fs";
 import Jimp from "jimp";
+import {TwitterClient} from 'twitter-api-client';
 import qs from "qs";
 import axios, { AxiosRequestConfig } from "axios";
 import dotenv from "dotenv";
@@ -9,6 +10,14 @@ import Parser from "rss-parser";
 dotenv.config();
 
 var parser = new Parser();
+
+const twitterClient = new TwitterClient({
+  apiKey: process.env.TWITTER_API_KEY,
+  apiSecret: process.env.TWITTER_API_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+});
+
 
 // ---------------
 // Spotify stuff
@@ -167,9 +176,20 @@ async function processImage() {
       909
     );
 
-    header.write("result.png");
-  } catch (e) {
-    console.log(e);
+    // TODO: Investigate why this doesn't work
+    // const headerBase64 = await header.getBase64Async(Jimp.MIME_PNG);
+
+    await header.writeAsync("result.png");
+
+    const headerBase64 = fs.readFileSync("result.png", { encoding: "base64" });
+
+    await twitterClient.accountsAndUsers.accountUpdateProfileBanner({
+      banner: headerBase64,
+    });
+
+    console.log("Uploaded banner! 🎉");
+  } catch (error) {
+    console.log(error);
   }
 }
 
