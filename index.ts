@@ -107,15 +107,22 @@ async function processImage() {
       "./fonts/cabin_regular_48/cabin-regular-48.ttf.fnt"
     );
 
-    const header = await Jimp.read("./header.png");
-    
+    const [header, tracks, article] = await Promise.all([
+      Jimp.read("./header.png"),
+      getRecentTracks(),
+      getLatestArticle(),
+    ]);
+
     // --------------------
     // Spotify related stuff for printing the tracks
     // --------------------
-    const tracks = await getRecentTracks();
+    const allCovers = await Promise.all(
+      tracks.map((track) => Jimp.read(track.cover))
+    );
 
-    for (const [index, track] of tracks.entries()) {
-      const cover = await Jimp.read(track.cover);
+    tracks.forEach((track, index) => {
+      const cover = allCovers[index];
+
       const resizedCover = cover.resize(200, 200);
 
       // This represents the gap between the position of the
@@ -139,13 +146,11 @@ async function processImage() {
         TRACKS_COORDINATES.artist.y + currentGap,
         track.artist
       );
-    }
+    });
 
     // --------------------
     // Blog related stuff for printing the latest article
     // --------------------
-    const article = await getLatestArticle();
-
     header.print(cabinMedium56, 923, 223, article.title, 909);
 
     const titleHeight = Jimp.measureTextHeight(
