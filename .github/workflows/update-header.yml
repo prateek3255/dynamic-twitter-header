@@ -32,3 +32,4 @@ jobs:
           cat .env
       - name: Run script
         run: yarn start
+    timeout-minutes: 2
