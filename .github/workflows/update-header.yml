@@ -3,7 +3,7 @@ name: Update header every 5 minutes
 on:
   push:
   schedule:
-    - cron: "* * * * *"
+    - cron: "* 10-22 * * *"
 
 jobs:
   build:
